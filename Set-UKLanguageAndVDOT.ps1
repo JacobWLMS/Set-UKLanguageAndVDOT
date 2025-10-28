@@ -1,6 +1,6 @@
 # Set-UKLanguageAndVDOT.ps1
 # Installs English (United Kingdom) language pack, sets locale, and runs VDOT
-# For use in Azure Image Builder (portal version, single script)
+# For use in Azure Image Builder (portal-friendly single script)
 
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -69,7 +69,8 @@ if (Test-Path $defaultUserSettingsPath) {
     $json += $appendItems
     $json | ConvertTo-Json -Depth 5 | Out-File -FilePath $defaultUserSettingsPath -Encoding UTF8 -Force
     Write-Output "UK locale entries appended to VDOT configuration."
-} else {
+}
+else {
     Write-Output "WARNING: DefaultUserSettings.JSON not found — skipping locale injection."
 }
 
@@ -81,9 +82,10 @@ if (Test-Path $vdotScript) {
         "NetworkOptimizations","ScheduledTasks","Services","WindowsMediaPlayer"
     ) -AdvancedOptimizations @("Edge")
     Write-Output "VDOT run completed."
-} else {
+}
+else {
     Write-Output "ERROR: Windows_VDOT.ps1 not found!"
 }
 
-Write-Output "=== UK Language + Locale + VDOT configuration completed ==="
-Write-Output "NOTE: Please ensure a Windows Restart customizer runs next."
+Write-Output "=== UK Language + Locale + VDOT configuration completed successfully ==="
+Write-Output "NOTE: Add a Windows Restart customizer next in your Image Builder sequence."
