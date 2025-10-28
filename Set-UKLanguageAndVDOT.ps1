@@ -88,4 +88,4 @@ else {
 }
 
 Write-Output "=== UK Language + Locale + VDOT configuration completed successfully ==="
-Write-Output "NOTE: Add a Windows Restart customizer next in your Image Builder sequence."
+Write-Output 'NOTE: Add a Windows Restart customizer next in your Image Builder sequence.'
