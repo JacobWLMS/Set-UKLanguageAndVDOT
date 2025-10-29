@@ -46,9 +46,7 @@ Write-Output 'Language pack installation completed.'
 # Step 2: Set System Locale and Language
 # ----------------------------------------------------------------------
 Write-Output "Setting system and user language to $LanguageTag..."
-$OldList = Get-WinUserLanguageList
 $UserLanguageList = New-WinUserLanguageList -Language $LanguageTag
-$UserLanguageList += $OldList | Where-Object { $_.LanguageTag -ne $LanguageTag }
 Set-WinUserLanguageList -LanguageList $UserLanguageList -Force
 
 Set-SystemPreferredUILanguage -Language $LanguageTag
