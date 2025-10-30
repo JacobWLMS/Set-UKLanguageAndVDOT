@@ -1,96 +1,31 @@
-# Set-UKLanguageAndVDOT.ps1
-# Installs English (United Kingdom) language pack, sets locale, and runs VDOT with only default user settings optimizations
+# Set-UKRegionalSettings.ps1
+# Sets UK regional settings and runs VDOT with default user settings optimizations
 # Fully self-contained for Azure Image Builder
 
-Write-Output '=== Starting UK Language + Locale + VDOT configuration ==='
+Write-Output '=== Starting UK Regional Settings + VDOT configuration ==='
 
 # ----------------------------------------------------------------------
-# Step 1: Install English (United Kingdom) language pack + FoD
+# Step 1: Set System Locale and Regional Settings
 # ----------------------------------------------------------------------
-$tempDir = 'C:\AIBTemp'
-New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
-
-Write-Output 'Preparing servicing stack...'
-Start-Service TrustedInstaller -ErrorAction SilentlyContinue
-Start-Service wuauserv -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 10
-
 $LanguageTag = 'en-GB'
-Write-Output "Installing language pack for $LanguageTag ..."
 
-# Install the core language pack and basic features
-$capabilities = @(
-    "Language.Basic~~~$LanguageTag~0.0.1.0",
-    "Language.Handwriting~~~$LanguageTag~0.0.1.0",
-    "Language.OCR~~~$LanguageTag~0.0.1.0",
-    "Language.Speech~~~$LanguageTag~0.0.1.0",
-    "Language.TextToSpeech~~~$LanguageTag~0.0.1.0"
-)
-
-foreach ($cap in $capabilities) {
-    Write-Output "Installing capability: $cap"
-    try {
-        # Try without source first (lets Windows Update handle it)
-        $result = Add-WindowsCapability -Online -Name $cap -ErrorAction Stop
-        Write-Output "  Status: $($result.RestartNeeded)"
-    } catch {
-        Write-Warning "Failed to install $cap : $_"
-        # Try with explicit source as fallback
-        try {
-            Write-Output "  Retrying with explicit source..."
-            Add-WindowsCapability -Online -Name $cap -Source "https://go.microsoft.com/fwlink/?linkid=2156295" -LimitAccess -ErrorAction Stop
-        } catch {
-            Write-Warning "  Retry also failed: $_"
-        }
-    }
-}
-
-Write-Output 'Language pack installation completed. Waiting for provisioning...'
-Start-Sleep -Seconds 30
-
-# Verify installation
-Write-Output 'Verifying installed capabilities...'
-$installed = Get-WindowsCapability -Online | Where-Object { $_.Name -like "Language.*$LanguageTag*" -and $_.State -eq 'Installed' }
-Write-Output "Installed: $($installed.Count) of $($capabilities.Count) capabilities"
-foreach ($cap in $installed) {
-    Write-Output "  ✓ $($cap.Name)"
-}
-
-# ----------------------------------------------------------------------
-# Step 2: Set System Locale and Language
-# ----------------------------------------------------------------------
-Write-Output "Setting system and user language to $LanguageTag..."
-
-# Set user language list
-$UserLanguageList = New-WinUserLanguageList -Language $LanguageTag
-Set-WinUserLanguageList -LanguageList $UserLanguageList -Force
+Write-Output "Setting system locale and regional settings to $LanguageTag..."
 
 # Set system locale
 Set-WinSystemLocale -SystemLocale $LanguageTag
 
-# Set additional regional settings
+# Set regional format settings
 Set-Culture -CultureInfo $LanguageTag
 Set-WinHomeLocation -GeoId 242  # United Kingdom
 
-Write-Output "System language and locale set to $LanguageTag."
+Write-Output "System locale and regional settings set to $LanguageTag."
 
 # ----------------------------------------------------------------------
-# Step 2.5: Clean up language pack provisioning state
+# Step 2: Apply UK locale defaults via VDOT DefaultUserSettings
 # ----------------------------------------------------------------------
-Write-Output 'Cleaning up provisioning state...'
-try {
-    # Clear pending operations that might interfere with sysprep
-    $null = DISM.exe /Online /Cleanup-Image /StartComponentCleanup /ResetBase
-    Write-Output 'Component cleanup completed.'
-} catch {
-    Write-Warning "Cleanup warning: $_"
-}
+$tempDir = 'C:\AIBTemp'
+New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
-Start-Sleep -Seconds 10
-
-# ----------------------------------------------------------------------
-# Step 3: Apply UK locale defaults via VDOT DefaultUserSettings
-# ----------------------------------------------------------------------
 $vdotZipUrl = 'https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip'
 $vdotZipPath = Join-Path $tempDir 'VDOT.zip'
 $vdotExtractedPath = Join-Path $tempDir 'Virtual-Desktop-Optimization-Tool-main'
@@ -138,11 +73,9 @@ else {
 }
 
 # ----------------------------------------------------------------------
-# Step 4: Final cleanup
+# Step 3: Final cleanup
 # ----------------------------------------------------------------------
 Write-Output 'Performing final cleanup...'
 Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 
-Write-Output '=== UK Language + Locale + VDOT configuration completed successfully ==='
-Write-Output 'NOTE: Add a Windows Restart customizer next in your Image Builder sequence.'
-Write-Output 'Then allow sufficient time (10-15 mins) before running sysprep.'
+Write-Output '=== UK Regional Settings + VDOT configuration completed successfully ==='
